@@ -6,7 +6,7 @@ This repository provides a comprehensive roadmap for the development and deploym
 
 1. **Transformers**
    - Learn about transformer architecture
-   - Understand key concepts such as attention mechanisms and positional encoding
+   - Understand key concepts such as attention mechanisms and positional encoding, BERT and GPT.
 
 2. **Vector Database**
    - Set up a vector database for efficient data retrieval
