@@ -77,3 +77,26 @@ train longer but produce better results with three methods:
 <img src="./image/4.png" width="400" height="400">
 
 <br />
+
+
+
+# Byte-Pair Encoding (BPE) Tokenizer
+
+## Overview
+The Byte-Pair Encoding (BPE) tokenizer is a hybrid between character-based and word-based tokenization. It is particularly effective in dealing with rare words or words not seen during training by breaking them down into more frequent subwords.
+
+## How it Works
+1. **Initialization**: Start by treating each character or byte as a symbol and count the frequency of all pairs of adjacent symbols.
+2. **Pair Merging**: Repeatedly merge the most frequent pairs to form new symbols, iteratively until a desired vocabulary size is reached.
+3. **Vocabulary Building**: Each new symbol is added to the vocabulary, enabling the model to handle common sequences as single units.
+
+## Example
+Given the sentence "This is a test.", the BPE tokenizer might process it as follows:
+- Initial Symbols: `T h i s _ i s _ a _ t e s t .`
+- Frequent Pairs: Merge `i` and `s`, `t` and `e`, `s` and `t`
+- Resulting Vocabulary: `T`, `h`, `is`, `a`, `te`, `st`, `.`, `_`
+- Tokenized Output: `This is a test .`
+
+## Benefits
+- **Efficiency**: Efficiently handles large vocabularies by breaking down infrequent words into subwords.
+- **Flexibility**: Adapts well to new words or symbols not seen during training.
