@@ -6,6 +6,7 @@
     - [1. Prompt Modifications](#1-prompt-modifications)
         - [Soft Prompt Tuning](#soft-prompt-tuning)
         - [Soft Prompt Tuning vs Prompt Engineering](#soft-prompt-vs-prompting)
+        - [Prefix Tuning](#prefix-tuning)
 
 
 
@@ -117,6 +118,57 @@ in Soft Prompt Tuning, we add a trainable token to the input prompt. The added p
     - **Soft Prompt Tuning:** This method is particularly useful when there’s a need to adapt a pre-trained model to various downstream tasks without adding significant computational overhead. Since the soft prompts are learned and optimized, they can capture nuanced information necessary for the task.
     - **Prompting with Extra Context:** This is often used when fine-tuning isn’t feasible or when working with models in a zero-shot or few-shot setting. It’s a way to leverage the vast knowledge contained in large pre-trained models by just guiding their behavior with carefully crafted prompts.
 
+<br />
 
+### Prefix Tuning:
+- Proposed in [Prefix-Tuning: Optimizing Continuous Prompts for Generation](https://arxiv.org/abs/2101.00190), prefix-tuning is a lightweight alternative to fine-tuning for natural language generation tasks, which keeps language model parameters frozen, but optimizes a small continuous task-specific vector (called the prefix).
+- Instead of adding a soft prompt to the model input, it prepends trainable parameters to the hidden states of all transformer blocks. During fine-tuning, the LM’s original parameters are kept frozen while the prefix parameters are updated.
+- Prefix-tuning draws inspiration from prompting, allowing subsequent tokens to attend to this prefix as if it were “virtual tokens”.
+- The figure below from the paper shows that fine-tuning (top) updates all Transformer parameters (the red Transformer box) and requires storing a full model copy for each task. They propose prefix-tuning (bottom), which freezes the Transformer parameters and only optimizes the prefix (the red prefix blocks). Consequently, prefix-tuning only need to store the prefix for each task, making prefix-tuning modular and space-efficient. Note that each vertical block denote transformer activations at one time step.
 
+![3](./image/3.jpg)
 
+---
+
+### **In Other Words:**
+- Prefix tuning is a technique aiming to streamline the process. Instead of relying on manual prompt engineering, it focuses on learning a continuous prompt that can be seamlessly optimized end-to-end. This learned prompt, when added to the model’s input, acts as a guiding beacon, providing the necessary context to steer the model’s behavior in alignment with the specific task at hand. It’s like giving the model a customized set of instructions without the hassle of intricate manual tweaking, making the entire process more efficient and dynamic. It also doesn’t require training multiple parameters from the model, training only less than 1000× the parameters of the model.
+- prefix tuning prepends a learned continuous vector to the input. For example, in summarization, a prefix would be prepended to the input document. The prefix is tuned to steer the model to perform summarization while keeping the large pretrained model fixed. This is much more efficient, requiring tuning only 0.1% of the parameters compared to full fine-tuning.
+- Prefix tuning draws inspiration from prompting methods like in GPT-3, but optimizes a continuous prefix vector rather than using discrete tokens. The paper shows prefix tuning can match the performance of full fine-tuning on table-to-text and summarization tasks, while using 1000x fewer parameters per task.
+
+#### How Prefix Tuning works:
+Prefix Tuning essentially prepends a learned continuous vector, called the prefix, to the input of the pretrained model.
+
+<br />
+
+Let’s take an example. Imagine we are prefix-tuning a Large Language Model (LLM) for Hate Speech Classification. The model takes an input x tweet and generates an output y which is the classification “Hate” or “Non-Hate”.
+
+<br />
+
+In prefix tuning, we’re doing a simple yet clever move — mixing x and y into a single sequence, let’s call it z = [x; y]. Why? Well, this combo creates a kind of “encoder-like” function. It’s super handy for tasks where y depends on x. It’s called Conditional Generation. This way, the model can smoothly go back and forth between x and y using its self-attention skills.
+Moving along in the process, we introduce a prefix vector, let’s call it u, which is placed at the beginning of our sequence z, resulting in the concatenated form [u; x; y].
+
+<br />
+
+The prefix vector u is a matrix with dimensions (prefix_length × d), where d denotes the hidden dimension size. To put it into perspective, consider a scenario with a prefix length of 10 and a hidden size of 1024. In this case, the prefix would house a total of 10,240 tunable parameters.
+
+This unified sequence is then systematically input into the Transformer model in an autoregressive manner. The model engages in attentive computations, focusing on prior tokens within the sequence z to predict the subsequent token. Specifically, the model computes hi, representing the current hidden state, as a function of zi and the past activations within its left context. This approach ensures the Transformer’s ability to progressively anticipate the upcoming tokens in the sequence.
+
+![4](./image/4.webp)
+
+--- 
+
+- **Embedding Modification:** In Prefix Tuning, a series of task-specific vectors, or "prefixes," are prepended to the input embeddings of the sequence that is fed into the model. These prefixes are learnable parameters that are optimized during training.
+- **Task Adaptation:** By training these prefix embeddings, the model can adapt to a new task without altering its core architecture or the bulk of its pre-trained weights. The trained prefixes essentially guide the model's attention and processing pathways to generate more appropriate responses for the specific task.
+
+### **Usage:**
+- **Fine-Tuning Alternative:** Prefix Tuning is used as an alternative to full model fine-tuning when there are constraints on computational resources or when model stability must be maintained across updates.
+- **Specialized Tasks:** It is particularly useful for specialized tasks where only a subset of the model's behavior needs to be modified, such as task-specific classification, generation tasks, or adapting to new domains with limited data.
+
+### **Advantages:**
+- **Efficiency:** It requires less memory and computational power compared to fine-tuning the entire model, as only a small number of parameters are trained.
+- __Flexibility:__ Prefixes can be easily swapped out for different tasks without interfering with the model's underlying capabilities.
+- __Preservation of Generalization:__ By keeping most of the model's weights fixed, Prefix Tuning preserves the generalization abilities learned during pre-training.
+
+### __Disadvantages__:
+- **Limited Scope:** Since only a small part of the model is adapted, the changes it can make are less dramatic than those possible through full model fine-tuning.
+- **Dependency on Pre-Trained Model Quality:** The effectiveness of Prefix Tuning heavily depends on the quality and versatility of the underlying pre-trained model.
