@@ -66,7 +66,7 @@ This soft prompt tells the LLM to write a poem with an ABAB rhyme scheme, in iam
 
 <br />
 
-#### - Soft Prompt vs. Prompting:
+### Soft Prompt vs. Prompting:
 
 **Prompting:** 
 - involves creating specific input prompts to guide the model's responses. These prompts are non-trainable and consist solely of plain text that contextualizes or specifies the task for the model.
