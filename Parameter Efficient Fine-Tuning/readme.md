@@ -1,3 +1,4 @@
+<a name="top"></a>
 # Parameter Efficicent Fine-Tuning
 - [Overview](#overview)
 - [what is PEFT ?](#parameter-efficient-fine-tuning-peft)
@@ -7,6 +8,11 @@
         - [Soft Prompt Tuning](#soft-prompt-tuning)
         - [Soft Prompt Tuning vs Prompt Engineering](#soft-prompt-vs-prompting)
         - [Prefix Tuning](#prefix-tuning)
+    - [2. Adapters](#2-adapters)
+        - [Soft Tuning vs Prefix Tuning vs Adapters](#soft-tuning-vs-prefix-tuning-vs-adapters)
+        - [What is an Adapter Module?](#what-is-an-adapter-module)
+        - [How to decide the value of ***m***?](#how-to-decide-the-value-of-m)
+        - [LLaMA-Adapters](#llama-adapters)
 
 
 
@@ -16,16 +22,22 @@
 - The simplest way out for efficient fine-tuning could be to freeze the networks’ lower layers and adapt only the top ones to specific tasks.
 - In this article, we’ll explore Parameter Efficient Fine-Tuning (PEFT) methods that enable us to adapt a pre-trained model to downstream tasks more efficiently – in a way that trains lesser parameters and hence saves cost and training time, while also yielding performance similar to full fine-tuning.
 
+[Back to Top](#top)
+
 ## Parameter-Efficient Fine-Tuning (PEFT)
 - Parameter-Efficient Fine-Tuning (PEFT) in the context of Large Language Models (LLMs) refers to a set of techniques used to fine-tune a pre-trained model on specific tasks or datasets while only updating a small subset of the model's parameters. This approach is aimed at reducing the computational cost and memory requirements associated with training large models. Instead of updating all the parameters, PEFT methods typically involve modifying only a few strategic parameters or adding small, trainable modules to the pre-existing network, thereby preserving the general capabilities of the model while adapting it to new tasks. This makes the fine-tuning process more efficient and accessible, especially for applications with limited resources.
 - The challenge is this: modern pre-trained models (like BERT, GPT, T5, etc.) contain hundreds of millions, if not billions, of parameters. Fine-tuning all these parameters on a downstream task, especially when the available dataset for that task is small, can easily lead to overfitting. The model may simply memorize the training data instead of learning genuine patterns. Moreover, introducing additional layers or parameters during fine-tuning can drastically increase computational requirements and memory consumption.
 - PEFT allows to only fine-tune a small number of model parameters while freezing most of the parameters of the pre-trained LLM.
+
+[Back to Top](#top)
 
 ## Practical Use-case
 - PEFT obviates the need for 40 or 80GB A100s to make use of powerful LLMs. In other words, you can fine-tune 10B+ parameter LLMs for your desired task for free or on cheap consumer GPUs.
 - Using PEFT methods like LoRA, especially 4-bit quantized base models via QLoRA, you can fine-tune 10B+ parameter LLMs that are 30-40GB in size on 16GB GPUs. 
 - If you’re fine-tuning on a single task, the base models are already so expressive that you need only a few (~10s-100s) of examples to perform well on this task. With PEFT via LoRA, you need to train only a trivial fraction (in this case, 0.08%), and though the weights are stored as 4-bit, computations are still done at 16-bit.
 - ***Key takeaway:*** You can fine-tune powerful LLMs to perform well on a desired task using free compute. Use a <10B parameter model, which is still huge, and use quantization, PEFT, checkpointing, and provide a small training set, and you can quickly fine-tune this model for your use case.
+
+[Back to Top](#top)
 
 ## PEFT Methods
 ![](./image/1.webp)
@@ -120,6 +132,8 @@ in Soft Prompt Tuning, we add a trainable token to the input prompt. The added p
 
 <br />
 
+[Back to Top](#top)
+
 ### Prefix Tuning:
 - Proposed in [Prefix-Tuning: Optimizing Continuous Prompts for Generation](https://arxiv.org/abs/2101.00190), prefix-tuning is a lightweight alternative to fine-tuning for natural language generation tasks, which keeps language model parameters frozen, but optimizes a small continuous task-specific vector (called the prefix).
 - Instead of adding a soft prompt to the model input, it prepends trainable parameters to the hidden states of all transformer blocks. During fine-tuning, the LM’s original parameters are kept frozen while the prefix parameters are updated.
@@ -172,3 +186,67 @@ This unified sequence is then systematically input into the Transformer model in
 ### __Disadvantages__:
 - **Limited Scope:** Since only a small part of the model is adapted, the changes it can make are less dramatic than those possible through full model fine-tuning.
 - **Dependency on Pre-Trained Model Quality:** The effectiveness of Prefix Tuning heavily depends on the quality and versatility of the underlying pre-trained model.
+
+<br />
+
+[Back to Top](#top)
+
+### 2. Adapters:
+- Adapter layers, often termed “Adapters”, add minimal additional parameters to the pretrained model. These adapters are inserted between existing layers of the network.
+- Adapters is a PEFT technique shown to achieve similar performance as compared to tuning the top layers while requiring as fewer parameters as two orders of magnitude.
+- Adapter-based tuning simply inserts new modules called “adapter modules” between the layers of the pre-trained network.
+![](./image/5.png) 
+
+#### [image source](https://sebastianraschka.com/blog/2023/llm-finetuning-llama-adapter.html)
+---
+- During fine-tuning, only the parameters of these adapter layers are updated, while the original model parameters are kept fixed. This results in a model with a small number of additional parameters that are task-specific.
+- Keeping the full PT model frozen, these modules are the only optimizable ones while fine-tuning – this means only a very few parameters are introduced per task yielding “compact” models.
+- They offer many benefits such as:
+    - Parameter-Efficiency: By keeping the main model frozen and only updating the adapter layers, a minimal number of parameters are added per task. This results in compact models that are memory-efficient.
+    - Performance: Despite the small parameter footprint, adapters often achieve performance comparable to conventional fine-tuning.
+- The adapter module consists of two fully connected layers with a bottleneck structure. This structure is inspired by autoencoders, which are designed to encode information into a compressed representation and then decode it back to its original form.
+- Here’s how the parameter efficiency is achieved:
+    1. **Bottleneck Structure:** The first layer of the adapter reduces the dimensionality of the input (e.g., from 1024 to 24 dimensions). This drastic reduction means that the information from the original 1024 dimensions must be compressed into just 24 dimensions. The second layer then projects these 24 dimensions back to the original 1024 dimensions.
+    2. **Reduction in Parameters:** This bottleneck approach significantly reduces the number of parameters. In your example, the total number of parameters introduced by the adapter is 49,152 (from the computation 1024x24 + 24x1024). If we were to use a single fully connected layer to project a 1024-dimensional input to a 1024-dimensional output directly, it would require 1,048,576 parameters (1024x1024).
+    3. **Efficiency Analysis:** By using the adapter approach, the number of parameters is substantially lower. Comparing 49,152 parameters to 1,048,576 parameters shows a dramatic reduction, making the adapter much more efficient in terms of parameter usage.
+    4. **Why is this Beneficial?:** This efficiency is particularly beneficial when fine-tuning large pre-trained models. Instead of retraining or adapting the entire network (which would be computationally expensive and memory-intensive), adapters allow for targeted adjustments with far fewer additional parameters. This makes the process more manageable and practical, especially when resources are limited.
+- The adapter’s bottleneck structure allows it to achieve similar functionality (adapting the model to new tasks or data) as a full-sized layer would, but with a significantly reduced number of parameters. This efficiency makes adapters a popular choice for fine-tuning large pre-trained models in a resource-effective manner.
+
+<br />
+
+### What is an Adapter Module?
+
+- Let’s look at the application of the adapter module in the transformer architecture in three points:
+    - The adapter module (right) first projects the original d-dimensional features into a smaller m-dimensional vector, applies a non-linearity, and then projects it back to d-dimensions.
+    - As can be seen, the module features a skip-connection - With it in place, when the parameters of the projection layers are initialized to near-zero which eventually leads to near identity initialization of the module. This is required for stable fine-tuning and is intuitive as with it, we essentially do not disturb the learning from pre-training.
+    - In a transformer block (left), the adapter is applied directly to the outputs of each of the layers (attention and feedforward).
+
+### How to decide the value of ***m***?
+- The size `m` in the Adapter module determines the no. of optimizable parameters and hence poses a parameter vs performance tradeoff.
+- The original paper experimentally investigates that the performance remains fairly stable across varying Adapter sizes m and hence for a given model a fixed size can be used for all downstream tasks.
+![6](./image/6.jpeg)
+
+<br />
+
+### [LLaMA-Adapters](https://arxiv.org/abs/2303.16199)
+- This paper introduces an efficient fine-tuning method called LLaMA-Adapter. This method is designed to adapt the LLaMA model into an instruction-following model with high efficiency in terms of resource usage and time. Key aspects of this paper include:
+    1. **Parameter Efficiency:** LLaMA-Adapter introduces only 1.2 million learnable parameters on top of the frozen LLaMA 7B model, which is significantly fewer than the full 7 billion parameters of the model. This approach leads to a more efficient fine-tuning process both in terms of computational resources and time, taking less than one hour on 8 A100 GPUs.
+    2. **Learnable Adaption Prompts:** The method involves appending a set of learnable adaption prompts to the input instruction tokens in the higher transformer layers of LLaMA. These prompts are designed to adaptively inject new instructions into the frozen LLaMA while preserving its pre-trained knowledge, effectively guiding the subsequent contextual response generation.
+    3. **Zero-initialized Attention Mechanism:** To avoid disturbances from randomly initialized adaption prompts, which can harm fine-tuning stability and effectiveness, the paper proposes a zero-initialized attention mechanism with a learnable gating factor. This mechanism allows for a stable learning process and progressive incorporation of instructional signals during training. It ensures that the newly acquired instructional signals are effectively integrated into the transformer while retaining the pre-trained knowledge of LLaMA.
+    4. **Generalization and Multi-modal Reasoning:** LLaMA-Adapter is not only effective for language tasks but can also be extended to multi-modal instructions, allowing for image-conditioned LLaMA models. This capability enables superior reasoning performance on benchmarks like ScienceQA and COCO Caption. Additionally, the approach has demonstrated strong generalization capacity in traditional vision and language tasks.
+- In summary, the LLaMA-Adapter represents a significant advancement in the field of parameter-efficient fine-tuning of large language models. Its innovative use of learnable adaption prompts and zero-initialized attention mechanism provides a highly efficient method for adapting pre-trained models to new tasks and domains, including multi-modal applications.
+- The image below ([source](https://sebastianraschka.com/blog/2023/llm-finetuning-llama-adapter.html)) illustrates this concept below.
+
+<br />
+
+![7](./image/7.png)
+--- 
+### Soft Tuning vs Prefix Tuning vs Adapters
+- **Soft Tuning:**
+often referred to as prompt tuning or in-context learning, involves crafting specific prompts that guide the model's behavior. This method leverages the pre-trained knowledge of the model by inserting example inputs and outputs directly into the prompt. It's a form of zero-shot or few-shot learning where the model generates responses based on the context provided in the prompt. This technique does not alter the model's underlying weights, making it computationally efficient and quick to implement for new tasks, especially when model adaptation needs to be lightweight or when data is scarce.
+- **Prefix Tuning:**
+is a method where fixed, task-specific parameters are prepended to the inputs during the training phase. These prefixed parameters, which are learned and optimized, act as a sort of "soft prompt" that adjusts the activation pathways within the model. Unlike soft tuning, prefix tuning involves actual training of these prefixed parameters while keeping the main model weights frozen. This allows for more customized control over the model’s outputs than soft tuning, catering to more complex requirements without the need for extensive retraining.
+- **Adapters:** 
+involve adding small trainable modules between the layers of an existing pre-trained model. These adapter layers are trained on a specific task while the original pre-trained weights of the model remain unchanged. This method is more invasive than soft or prefix tuning because it modifies the model's architecture with additional parameters. However, it is still more efficient than retraining the entire model. Adapters are particularly useful for tasks that require significant deviation from the model's base training but still benefit from leveraging the underlying large-scale pre-trained network.
+
+[Back to Top](#top)
