@@ -13,7 +13,9 @@
         - [What is an Adapter Module?](#what-is-an-adapter-module)
         - [How to decide the value of ***m***?](#how-to-decide-the-value-of-m)
         - [LLaMA-Adapters](#llama-adapters)
-
+    - [3. Low Rank Adaptation (LoRA)](#low-rank-adaptationlora)
+        - [The Idea Behind Low-Rank Adaptation](#the-idea-behind-low-rank-adaptation)
+        - [LoRA Hyperparameters](#lora-hyperparameters)
 
 
 ## Overview:
@@ -248,5 +250,59 @@ often referred to as prompt tuning or in-context learning, involves crafting spe
 is a method where fixed, task-specific parameters are prepended to the inputs during the training phase. These prefixed parameters, which are learned and optimized, act as a sort of "soft prompt" that adjusts the activation pathways within the model. Unlike soft tuning, prefix tuning involves actual training of these prefixed parameters while keeping the main model weights frozen. This allows for more customized control over the model’s outputs than soft tuning, catering to more complex requirements without the need for extensive retraining.
 - **Adapters:** 
 involve adding small trainable modules between the layers of an existing pre-trained model. These adapter layers are trained on a specific task while the original pre-trained weights of the model remain unchanged. This method is more invasive than soft or prefix tuning because it modifies the model's architecture with additional parameters. However, it is still more efficient than retraining the entire model. Adapters are particularly useful for tasks that require significant deviation from the model's base training but still benefit from leveraging the underlying large-scale pre-trained network.
+
+[Back to Top](#top)
+
+<br />
+
+### Low Rank Adaptation(LoRA)
+- **Essence:**
+    - Low Rank Adaptation (LoRA) simplifies the fine-tuning of large models by decomposing complex, high-dimensional weight matrices into lower-dimensional forms. This technique, akin to methods like PCA and SVD, allows for the retention of critical information while significantly reducing the size and complexity of the weights, thus enhancing fine-tuning efficiency on resource-constrained settings.
+- **Application:**
+    - LoRA identifies key dimensions in the original weight matrix of neural networks, optimizing these reduced dimensions to maintain the model’s learning capabilities with less computational cost. It adds trainable low-rank matrices to the model’s architecture, specifically to the Transformer layers, and optimizes these matrices instead of the entire model, leading to fewer trainable parameters and reduced memory requirements.
+- **Benefits:**
+    - This approach offers considerable time and memory efficiency, as a large portion of the model’s parameters are kept frozen, reducing both training time and GPU memory requirements. It also avoids additional inference latency and facilitates easy task-switching during deployment, requiring changes only in a small subset of weights.
+- **In Summary:**
+    - LoRA represents a smart balance in model fine-tuning, preserving the core strengths of large pre-trained models while adapting them efficiently for specific tasks or datasets. It’s a technique that redefines efficiency in the world of massive language models.
+
+![8](./image/8.png)
+
+<br />
+
+### The Idea Behind Low-Rank Adaptation
+- The overall idea and concept are related to principal component analysis (PCA) and singular vector decomposition (SVD), where we approximate a high-dimensional matrix or dataset using a lower-dimensional representation. In other words, we try to find a (linear) combination of a small number of dimensions in the original feature space (or matrix) that can capture most of the information in the dataset.
+
+![image](./image/9.png)
+
+<br />
+
+- Before we continue, let’s recap by taking a quick look at traditional finetuning vs. LoRA with the images ([source](https://sebastianraschka.com/blog/2023/llm-finetuning-lora.html)) below:
+
+<br />
+
+![10](./image/10.png)
+
+<br />
+
+![11](./image/11.png)
+
+> LoRA efficiently fine-tunes large-scale neural networks by introducing trainable low-rank matrices, simplifying the model’s complexity while retaining its robust learning capabilities.
+
+<br />
+
+### LoRA Hyperparameters
+- LoRA is particularly useful in situations where fine-tuning all parameters of a large model is computationally expensive or when the amount of available training data is limited. The core idea behind LoRA is to introduce trainable low-rank matrices that adapt the pre-trained weights of a model without directly modifying them. Here are the key hyperparameters associated with LoRA:
+    1. **Rank (`r`):** This is arguably the most important hyperparameter in LoRA. The rank of the adaptation matrices determines the balance between the model’s capacity and the number of additional parameters introduced. A higher rank increases the model’s capacity to learn the desired task (i.e., domain adapt) from new data but also increases the number of parameters and computational cost. Finding the optimal rank usually requires experimentation.
+    2. **Learning Rate:** While not unique to LoRA, the learning rate for the LoRA parameters is crucial. It might be beneficial to set a different learning rate for the LoRA parameters compared to the rest of the model, especially if the base model’s parameters are frozen.
+    3. **Weight Decay:** This hyperparameter controls the regularization of the LoRA parameters. Adjusting weight decay can help prevent overfitting, especially when the dataset is small or the model is particularly large.
+    4. **Initialization Scale (α):** The scale at which the low-rank matrices are initialized can affect the adaptation process. Proper initialization helps in starting the training process from a good point, which can lead to better performance.
+    5. **Training Epochs:** The number of epochs to train the LoRA adaptation. Since LoRA involves training fewer parameters than the entire model, it might converge faster, so the optimal number of epochs might be different from standard full-model fine-tuning.
+    6. **Batch Size:** The size of the batches used during training can influence the model’s performance and convergence speed. Batch size can affect the stability and quality of the gradient estimates, which are crucial when adapting a model using LoRA.
+- These hyperparameters can significantly impact the effectiveness of LoRA in adapting pre-trained models to new tasks or datasets. The optimal settings for these hyperparameters can vary depending on the specific task, the size of the dataset, and the architecture of the base model being adapted. Experimentation and validation on a development dataset are often required to find the best combination of hyperparameters for a given application.
+- **More resources**:
+    1. [sebastianraschka](https://sebastianraschka.com/blog/2023/llm-finetuning-lora.html).
+
+[video: Low-Rank Adaptation - LoRA explained](https://youtu.be/X4VvO3G6_vw?si=4nKzRXZ-vSghEqJS)
+
 
 [Back to Top](#top)
