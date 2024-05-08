@@ -301,6 +301,7 @@ involve adding small trainable modules between the layers of an existing pre-tra
 - These hyperparameters can significantly impact the effectiveness of LoRA in adapting pre-trained models to new tasks or datasets. The optimal settings for these hyperparameters can vary depending on the specific task, the size of the dataset, and the architecture of the base model being adapted. Experimentation and validation on a development dataset are often required to find the best combination of hyperparameters for a given application.
 - **More resources**:
     1. [sebastianraschka](https://sebastianraschka.com/blog/2023/llm-finetuning-lora.html).
+    2. [Improving LoRA](https://magazine.sebastianraschka.com/p/lora-and-dora-from-scratch)
 
 [video: Low-Rank Adaptation - LoRA explained](https://youtu.be/X4VvO3G6_vw?si=4nKzRXZ-vSghEqJS)
 
