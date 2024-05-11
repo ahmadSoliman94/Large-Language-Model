@@ -13,10 +13,11 @@
         - [What is an Adapter Module?](#what-is-an-adapter-module)
         - [How to decide the value of ***m***?](#how-to-decide-the-value-of-m)
         - [LLaMA-Adapters](#llama-adapters)
-    - [3. Low Rank Adaptation (LoRA)](#low-rank-adaptationlora)
-        - [The Idea Behind Low-Rank Adaptation](#the-idea-behind-low-rank-adaptation)
-        - [LoRA Hyperparameters](#lora-hyperparameters)
-
+    - [3. Reparameterization](#reparameterization)
+        - [Low Rank Adaptation (LoRA)](#low-rank-adaptationlora)
+            - [The Idea Behind Low-Rank Adaptation](#the-idea-behind-low-rank-adaptation)
+            - [LoRA Hyperparameters](#lora-hyperparameters)
+        - [Quantized Low-Rank Adaptation (QLoRA)](#quantized-low-rank-adaptation-qlora)
 
 ## Overview:
 - Fine-tuning of large pre-trained models on downstream tasks is called “transfer learning”.
@@ -255,6 +256,8 @@ involve adding small trainable modules between the layers of an existing pre-tra
 
 <br />
 
+## Reparameterization
+
 ### Low Rank Adaptation(LoRA)
 - **Essence:**
     - Low Rank Adaptation (LoRA) simplifies the fine-tuning of large models by decomposing complex, high-dimensional weight matrices into lower-dimensional forms. This technique, akin to methods like PCA and SVD, allows for the retention of critical information while significantly reducing the size and complexity of the weights, thus enhancing fine-tuning efficiency on resource-constrained settings.
@@ -307,3 +310,38 @@ involve adding small trainable modules between the layers of an existing pre-tra
 
 
 [Back to Top](#top)
+
+--- 
+
+### Quantized Low-Rank Adaptation (QLoRA)
+- Proposed in (QLoRA: Efficient Finetuning of Quantized LLMs)[https://arxiv.org/abs/2305.14314].
+- This paper by Dettmers et al. from UW presents QLoRA, an efficient finetuning approach that reduces memory usage enough to finetune a 65B parameter model on a single 48GB GPU while preserving full 16-bit finetuning task performance. Put simply, QLoRA is a new technique to reduce the memory footprint of large language models during finetuning, without sacrificing performance. QLoRA backpropagates gradients through a frozen, 4-bit quantized pretrained language model into Low Rank Adapters (LoRA).
+- Put simply, QLoRA is a method designed to efficiently fine-tune large pre-trained language models (LLMs), like a 65B parameter model, on limited GPU memory without sacrificing performance. It combines the principles of Low-Rank Adaptation (LoRA) with innovative 4-bit NormalFloat (NF4) quantization and Double Quantization techniques, optimizing parameter efficiency and computational resource utilization.
+- At a top-level, QLoRA operates based on the following steps:
+    - Quantize the pre-trained model to 4 bits and freeze it.
+    - Attach small, trainable adapter layers (similar to LoRA).
+    - Finetune only the adapter layers while using the frozen quantized model for context.
+- **Key Components:**
+    1.  **Low-Rank Adaptation:** QLoRA follows LoRA’s strategy of injecting trainable low-rank matrices into the architecture of pretrained LLMs, specifically targeting Transformer layers. This selective fine-tuning strategy focuses on optimizing these low-rank matrices rather than the entire model, reducing the number of trainable parameters and computational costs.
+    2. **Quantization:** The distinguishing aspect of QLoRA lies in its quantization approach, which includes:
+        - NF4 Quantization: This technique involves quantizing the model weights to 4-bit NormalFloat (NF4), efficiently compressing them to fit a specific distribution suitable for NF4 without complex algorithms.
+        - Double Quantization: This secondary quantization further reduces memory overhead by quantizing the quantization constants themselves, using 8-bit floats with a 256 block size, achieving significant memory savings without affecting model performance.
+- **Operation:**
+    - QLoRA employs a frozen, 4-bit quantized pretrained language model and fine-tunes it by backpropagating gradients into the low rank adapters. This method optimizes computation through low-bit quantization and reduces the number of parameters by using low-rank structures, striking a balance between efficiency and performance.
+- Their best model family, which they name Guanaco, outperforms all previous openly released models on the Vicuna benchmark, reaching 99.3% of the performance level of ChatGPT while only requiring 24 hours of finetuning on a single GPU. QLoRA introduces a number of innovations to save memory without sacrificing performance: (a) 4-bit NormalFloat (NF4), a new data type that is information theoretically optimal for normally distributed weights (b) double quantization to reduce the average memory footprint by quantizing the quantization constants, and (c) paged optimziers to manage memory spikes.
+- They use QLoRA to finetune more than 1,000 models, providing a detailed analysis of instruction following and chatbot performance across 8 instruction datasets, multiple model types (LLaMA, T5), and model scales that would be infeasible to run with regular finetuning (e.g. 33B and 65B parameter models).
+- The figure below from the paper shows different finetuning methods and their memory requirements. QLORA improves over LoRA by quantizing the transformer model to 4-bit precision and using paged optimizers to handle memory spikes.
+
+![image](./image/12.jpg)
+
+> In the QLoRA approach, it is the original model’s weights that are quantized to 4-bit precision. The newly added Low-rank Adapter (LoRA) weights are not quantized; they remain at a higher precision and are fine-tuned during the training process. This strategy allows for efficient memory use while maintaining the performance of large language models during finetuning.
+
+
+- To learn more about QLoRA and how it works, [this](https://huggingface.co/blog/4bit-transformers-bitsandbytes) Hugging Face blog post is highly recommended.
+
+- [video: QLoRa paper explained](https://youtu.be/6l8GZDPbFn8?si=KdMIxOvp3lTMtbsy)
+
+
+
+[Back to Top](#top)
+
