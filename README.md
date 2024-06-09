@@ -35,7 +35,10 @@ This repository provides a comprehensive roadmap for the development and deploym
 
 - #### [LLM Models and RAG Hands-on Guide](https://github.com/ahmadSoliman94/intro-llm-rag)
 - #### [Advanced Prompt Engineering Techniques](https://www.mercity.ai/blog-post/advanced-prompt-engineering-techniques)
+- #### [Agentic RAG: A Reasoning Revolution for Information Retrieval](https://www.linkedin.com/pulse/agentic-rag-reasoning-revolution-information-retrieval-shakun-vohra-xgs0f/)
 - #### [An awesome & curated list of the best LLMOps tools for developers.](https://github.com/ahmadSoliman94/Awesome-LLMOps.git)
 - #### [Build RAG Application Using a LLM Running on Local Computer with Ollama Llama2 and LlamaIndex](https://medium.com/rahasak/build-rag-application-using-a-llm-running-on-local-computer-with-ollama-and-llamaindex-97703153db20)
 - #### [An End-to-End Framework for Production-Ready LLM Systems by Building Your LLM Twin](https://github.com/ahmadSoliman94/LLM-Twin)
+
+
 
